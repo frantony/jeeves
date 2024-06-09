@@ -1,0 +1,235 @@
+#!/bin/sh
+
+#
+# jeeves --- just keep large binary files in a git repo
+#
+
+# Usage:
+#   git clone <remote-jeeves-repo> <local-jeeves-repo>
+#   cd <local-jeeves-repo>
+#   ./jeeves ls
+#
+# Partial fetch:
+#   git archive --remote=<remote-jeeves-repo> master jeeves | tar xO > jeeves
+#   ./jeeves init <local-jeeves-repo>
+#   cd <local-jeeves-repo>
+#   git remote add <remote-name> <remote-jeeves-repo>
+#   git fetch --filter=blob:none --tags <remote-name>
+#   ./jeeves ls
+#   ./jeeves fetch <remote-name> <hash>
+
+#set -x
+set -e
+
+GIT="git"
+
+MARK="#jeeves"
+
+EDITOR="${EDITOR:-vim}"
+
+if [ "$1" = "-C" ]; then
+	GIT="${GIT} -C $2"
+	shift;
+	shift;
+fi
+
+if [ "$1" = "add" ]; then
+	FILEPATH="$2"
+
+	FILE="$(basename "${FILEPATH}")"
+	BHASH="$(${GIT} hash-object -w "${FILEPATH}")"
+
+	INREPONAME=${BHASH}.blob
+
+cat_gitattributes()
+{
+		cat <<EOF
+.gitattributes !filter
+
+*.blob -crlf -diff -text -merge
+EOF
+}
+
+	ATTRBHASH=$(cat_gitattributes | ${GIT} hash-object -w --stdin)
+
+	LST="100644 blob ${ATTRBHASH}	.gitattributes"
+	LST="${LST}\n100644 blob ${BHASH}	${INREPONAME}"
+	THASH=$(echo "${LST}" | ${GIT} mktree)
+
+	CMESGFILE=$(mktemp)
+
+	echo "${MARK}: add ${BHASH} ${FILE}" > ${CMESGFILE}
+
+	${EDITOR} ${CMESGFILE}
+
+	CHASH=$(${GIT} commit-tree ${THASH} -m "$(cat ${CMESGFILE})")
+
+	rm -f ${CMESGFILE}
+
+	${GIT} tag blob/${BHASH} ${CHASH}
+
+	echo "${BHASH} ${FILE}"
+
+	exit 0
+fi
+
+if [ "$1" = "fetch" ]; then
+	REPO="$2"
+	BHASH="$3"
+
+	RTAG="refs/tags/blob/${BHASH}"
+
+	${GIT} fetch ${REPO} ${RTAG}:${RTAG}
+
+	exit 0
+fi
+
+if [ "$1" = "push" ]; then
+	REPO="$2"
+	BHASH="$3"
+
+	${GIT} push ${REPO} blob/${BHASH}
+
+	exit 0
+fi
+
+if [ "$1" = "show" ]; then
+	BHASH="$2"
+
+	${GIT} cat-file blob ${BHASH}
+
+	exit 0
+fi
+
+check_blob()
+{
+	BHASH="$1"
+
+	${GIT} cat-file -e ${BHASH}
+	RC=$?
+	if [ "$RC" = 0 ]; then
+		${GIT} rev-list blob/${BHASH} >/dev/null 2>&1
+		RC=$?
+	fi
+
+	return ${RC}
+}
+
+if [ "$1" = "exists" ]; then
+	BHASH="$2"
+
+	check_blob ${BHASH}
+
+	exit $?
+fi
+
+get_filename()
+{
+	BHASH="$1"
+
+	check_blob "${BHASH}"
+	if [ "$?" != "0" ]; then
+		return $?;
+	fi
+
+	${GIT} log --pretty=oneline --abbrev-commit --decorate=no -1 blob/${BHASH} | cut -d" " -f2- | sed "s/^${MARK}: add ${BHASH} //"
+}
+
+if [ "$1" = "get" ]; then
+	BHASH="$2"
+	TARGET="$3"
+
+	if [ -z "${TARGET}" ]; then
+		TARGET="."
+	fi
+
+	FNAME=$(get_filename ${BHASH})
+
+	mkdir -p "${TARGET}"
+
+	${GIT} cat-file blob ${BHASH} > "${TARGET}/${FNAME}"
+
+	exit 0
+fi
+
+if [ "$1" = "filename" ]; then
+	BHASH="$2"
+
+	get_filename ${BHASH}
+
+	exit 0
+fi
+
+if [ "$1" = "drop" ]; then
+	BHASH="$2"
+
+	${GIT} tag -d blob/${BHASH}
+	${GIT} gc --prune=now
+
+	exit 0
+fi
+
+if [ "$1" = "ls" ]; then
+	for BHASH in $(${GIT} tag | grep ^blob/ | sed "s/^blob\///"); do
+		echo "$BHASH $(get_filename ${BHASH})"
+	done | sort -k2
+
+	exit 0
+fi
+
+if [ "$1" = "lsl" ]; then
+
+	for BHASH in $(${GIT} tag | grep ^blob/ | sed "s/^blob\///"); do
+		SIZE=$(echo ${BHASH} | ${GIT} cat-file --batch-check='%(objectsize)')
+		echo "$SIZE $BHASH $(get_filename ${BHASH})"
+	done | sort -n | numfmt --to=iec-i --suffix=B --field 1 --padding 8
+
+	exit 0
+fi
+
+if [ "$1" = "init" ]; then
+
+	if [ -n "$2" ]; then
+		PREF="$2"
+	else
+		PREF="."
+	fi
+
+	mkdir -p "${PREF}"
+
+	if [ -d "${PREF}/.git" ]; then
+		echo "${PREF}/.git/ already exists!"
+		exit 1
+	fi
+
+	if [ -f "${PREF}/jeeves" ]; then
+		if ! cmp --silent "$0" "${PREF}/jeeves"; then
+			install -v "$0" "${PREF}/jeeves"
+		fi
+	else
+		install -v "$0" "${PREF}/jeeves"
+	fi
+
+	GIT="git -C ${PREF}"
+	${GIT} init --quiet
+
+	${GIT} add jeeves
+	${GIT} commit -m "Initial commit"
+
+	exit 0
+fi
+
+echo "Usage:"
+echo "    jeeves init [<path>]"
+echo "    jeeves add <filename>"
+echo "    jeeves ls"
+echo "    jeeves lsl"
+echo "    jeeves get <hash> [<path>]"
+echo "    jeeves show <hash>"
+echo "    jeeves exists <hash>"
+echo "    jeeves fetch <repo> <hash>"
+echo "    jeeves push <repo> <hash>"
+echo "    jeeves drop <hash>"
+echo "    jeeves filename <hash>"
+
+exit 1
