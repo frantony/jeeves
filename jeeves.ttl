@@ -1,0 +1,62 @@
+# vim:ts=4:sw=4:softtabstop=4:smarttab:expandtab:filetype=turtle
+@prefix cdt: <http://w3id.org/lindt/custom_datatypes#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix scm: <terminusdb:///schema#> .
+
+<urn:uuid:07ee4f71-9bc0-4136-908a-449b050de748> a rdfs:Resource ;
+    scm:alias "MIME type" ;
+    scm:name "content-type",
+        "media type" ;
+    scm:url "https://en.wikipedia.org/wiki/Media_type",
+        "https://www.iana.org/assignments/media-types/media-types.xhtml" .
+
+<urn:uuid:41bc232e-5cb1-468c-9a82-bddbd989a036> a rdfs:Resource ;
+    scm:name "computer file" ;
+    scm:url "https://en.wikipedia.org/wiki/Computer_file" .
+
+<urn:uuid:6cf40312-698a-4710-8188-e596b77d621d> a rdfs:Resource ;
+    scm:is-a <urn:uuid:926c6451-e6f5-4c41-887d-5f0a261c22f3> ;
+    scm:name "red" ;
+    scm:url "https://www.wikidata.org/wiki/Q3142" .
+
+<urn:uuid:873b77f3-3998-4f6c-a63c-4aad5f31e80a> a rdfs:Resource ;
+    scm:is-a <urn:uuid:07ee4f71-9bc0-4136-908a-449b050de748> ;
+    scm:name "image/png" .
+
+<urn:uuid:896b6258-102c-4013-a83f-66dd3934e73e> a rdfs:Resource ;
+    scm:git-blob "b5b1619433c0388263f8bb9dd374347591068b86" ;
+    scm:is-a <urn:uuid:41bc232e-5cb1-468c-9a82-bddbd989a036> ;
+    scm:linked-to <urn:uuid:6cf40312-698a-4710-8188-e596b77d621d> ;
+    scm:media-type <urn:uuid:873b77f3-3998-4f6c-a63c-4aad5f31e80a> ;
+    scm:name "red_64x64.png" .
+
+<urn:uuid:926c6451-e6f5-4c41-887d-5f0a261c22f3> a rdfs:Resource ;
+    scm:description "characteristic of visual perception" ;
+    scm:name "color" ;
+    scm:url "https://en.wikipedia.org/wiki/Color",
+        "https://ru.wikipedia.org/wiki/%D0%A6%D0%B2%D0%B5%D1%82",
+        "https://www.wikidata.org/wiki/Q1075" .
+
+<urn:uuid:ad544950-d1a9-46cb-9b7a-91fcfb9fe3da> a rdfs:Resource ;
+    scm:is-a <urn:uuid:926c6451-e6f5-4c41-887d-5f0a261c22f3> ;
+    scm:name "green" ;
+    scm:url "https://www.wikidata.org/wiki/Q3133" .
+
+<urn:uuid:d4ad48de-a885-4dc8-bf80-6fac8eca8759> a rdfs:Resource ;
+    scm:is-a <urn:uuid:926c6451-e6f5-4c41-887d-5f0a261c22f3> ;
+    scm:name "blue" ;
+    scm:url "https://www.wikidata.org/wiki/Q1088" .
+
+<urn:uuid:e4d7cc98-d11c-42e2-9001-3bb6e77838a7> a rdfs:Resource ;
+    scm:git-blob "2509506b7c3885dbfce056b48f56ddafedfd1799" ;
+    scm:is-a <urn:uuid:41bc232e-5cb1-468c-9a82-bddbd989a036> ;
+    scm:linked-to <urn:uuid:ad544950-d1a9-46cb-9b7a-91fcfb9fe3da> ;
+    scm:media-type <urn:uuid:873b77f3-3998-4f6c-a63c-4aad5f31e80a> ;
+    scm:name "green_64x64.png" .
+
+<urn:uuid:f76d50a8-1a89-49ec-a4b5-d64cf1a00bd7> a rdfs:Resource ;
+    scm:git-blob "7944139a75b6d52f0323ab165580a67b52bfc83a" ;
+    scm:is-a <urn:uuid:41bc232e-5cb1-468c-9a82-bddbd989a036> ;
+    scm:linked-to <urn:uuid:d4ad48de-a885-4dc8-bf80-6fac8eca8759> ;
+    scm:media-type <urn:uuid:873b77f3-3998-4f6c-a63c-4aad5f31e80a> ;
+    scm:name "blue_64x64.png" .
